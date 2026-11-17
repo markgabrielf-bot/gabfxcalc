@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forex Risk Calculator</title>
+<style>
+  :root {
+    --bg: #0f1419; --card: #182028; --line: #2a3541; --text: #e8edf2; --muted: #8b99a8;
+    --accent: #3ddc97; --loss: #ff6b6b; --input: #0f1419;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 8px 0 2px; }
+  .sub { color: var(--muted); font-size: .9rem; margin-bottom: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 10px 12px; font-size: 1rem; color: var(--text);
+    background: var(--input); border: 1px solid var(--line); border-radius: 8px; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+  .toggle { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggle button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--input); color: var(--muted); font-size: .95rem; cursor: pointer; }
+  .toggle button.active { background: var(--accent); color: #0b1a12; border-color: var(--accent); font-weight: 600; }
+  .rate-row { display: flex; gap: 8px; align-items: flex-end; }
+  .rate-row > div { flex: 1; }
+  .btn { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--accent); background: transparent;
+    color: var(--accent); font-size: .9rem; cursor: pointer; white-space: nowrap; }
+  .btn:hover { background: rgba(61,220,151,.1); }
+  .status { font-size: .78rem; color: var(--muted); margin-top: 6px; min-height: 1em; }
+  .hero { text-align: center; }
+  .hero .label { color: var(--muted); font-size: .85rem; }
+  .hero .big { font-size: 2rem; font-weight: 700; color: var(--loss); margin: 2px 0; }
+  .hero .php { font-size: 1.1rem; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: 9px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; font-size: .78rem; }
+  .win { color: var(--accent); } .lose { color: var(--loss); }
+  .small { font-size: .75rem; color: var(--muted); display: block; }
+  .scroll { overflow-x: auto; }
+  .foot { color: var(--muted); font-size: .75rem; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Forex Risk Calculator</h1>
+  <div class="sub">Know exactly how much you risk and how much you can make, in USD and PHP.</div>
+
+  <div class="card">
+    <div class="toggle">
+      <button id="modePct" class="active" type="button">Risk by % of balance</button>
+      <button id="modeFix" type="button">Risk by fixed amount</button>
+    </div>
+    <div class="grid">
+      <div>
+        <label for="balance">Account balance (USD)</label>
+        <input id="balance" type="number" inputmode="decimal" min="0" step="any" value="1000">
+      </div>
+      <div id="pctWrap">
+        <label for="riskPct">Risk per trade (%)</label>
+        <input id="riskPct" type="number" inputmode="decimal" min="0" step="any" value="1">
+      </div>
+      <div id="fixWrap" style="display:none">
+        <label for="riskFix">Risk per trade (USD)</label>
+        <input id="riskFix" type="number" inputmode="decimal" min="0" step="any" value="10">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="rate-row">
+      <div>
+        <label for="rate">USD to PHP rate (₱ per $1)</label>
+        <input id="rate" type="number" inputmode="decimal" min="0" step="any" placeholder="Loading live rate...">
+      </div>
+      <button class="btn" id="refresh" type="button">Get latest rate</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card hero">
+    <div class="label">You are risking per trade</div>
+    <div class="big" id="riskUsd">$0.00</div>
+    <div class="php" id="riskPhp">₱0.00</div>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label for="inst">Pair type</label>
+        <select id="inst">
+          <option value="usdq">USD is quote (EURUSD, GBPUSD, AUDUSD, NZDUSD)</option>
+          <option value="usdb">USD is base (USDCAD, USDCHF)</option>
+          <option value="usdjpy">USDJPY</option>
+          <option value="jpyx">JPY crosses (EURJPY, GBPJPY, AUDJPY...)</option>
+          <option value="gold">Gold (XAUUSD)</option>
+          <option value="custom">Other (enter pip value)</option>
+        </select>
+      </div>
+      <div>
+        <label for="sl">Stop loss (pips)</label>
+        <input id="sl" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 20">
+      </div>
+      <div id="priceWrap" style="display:none">
+        <label for="price" id="priceLabel">Current price</label>
+        <input id="price" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1.3650">
+      </div>
+      <div id="customPipWrap" style="display:none">
+        <label for="customPip">Pip value per 1.00 lot (USD)</label>
+        <input id="customPip" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10">
+      </div>
+    </div>
+    <div class="hero" style="margin-top:16px">
+      <div class="label">Lot size to use</div>
+      <div class="big" id="lotOut" style="color:var(--accent)">0.00</div>
+      <div class="php" id="lotNote">Enter your stop loss in pips</div>
+    </div>
+    <div class="status" id="pipNote"></div>
+  </div>
+
+  <div class="card">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Ratio</th><th>TP pips</th><th>Risk</th><th>Profit if win</th><th>Net if win</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px; max-width: 220px;">
+      <label for="custom">Add custom ratio (1 : ?)</label>
+      <input id="custom" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 2.5">
+    </div>
+  </div>
+
+  <div class="foot"><a href="https://www.exchangerate-api.com" style="color:inherit">Rates By Exchange Rate API</a></div>
+  <div class="foot">For planning only. Spreads, commissions and slippage are not included. Trading involves risk.</div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var mode = "pct";
+  var ratios = [1, 2, 3, 4, 5];
+  var KEY = "fxrisk_v1";
+
+  function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
+  function usd(n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function php(n) { return "₱" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        mode: mode, balance: $("balance").value, riskPct: $("riskPct").value,
+        riskFix: $("riskFix").value, rate: $("rate").value, custom: $("custom").value,
+        sl: $("sl").value, inst: $("inst").value, price: $("price").value, customPip: $("customPip").value
+      }));
+    } catch (e) {}
+  }
+  function load() {
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (!s) return;
+      mode = s.mode === "fix" ? "fix" : "pct";
+      if (s.balance) $("balance").value = s.balance;
+      if (s.riskPct) $("riskPct").value = s.riskPct;
+      if (s.riskFix) $("riskFix").value = s.riskFix;
+      if (s.rate) $("rate").value = s.rate;
+      if (s.custom) $("custom").value = s.custom;
+      if (s.sl) $("sl").value = s.sl;
+      if (s.inst) $("inst").value = s.inst;
+      if (s.price) $("price").value = s.price;
+      if (s.customPip) $("customPip").value = s.customPip;
+    } catch (e) {}
+  }
+
+  function setMode(m) {
+    mode = m;
+    $("modePct").classList.toggle("active", m === "pct");
+    $("modeFix").classList.toggle("active", m === "fix");
+    $("pctWrap").style.display = m === "pct" ? "" : "none";
+    $("fixWrap").style.display = m === "fix" ? "" : "none";
+    render();
+  }
+
+  function pipValuePerLot() {
+    var t = $("inst").value, p = num($("price").value);
+    if (t === "usdq" || t === "gold") return 10;
+    if (t === "usdb") return p ? 10 / p : 0;
+    if (t === "usdjpy" || t === "jpyx") return p ? 1000 / p : 0;
+    return num($("customPip").value);
+  }
+
+  function updateInst() {
+    var t = $("inst").value;
+    var needsPrice = t === "usdb" || t === "usdjpy" || t === "jpyx";
+    $("priceWrap").style.display = needsPrice ? "" : "none";
+    $("customPipWrap").style.display = t === "custom" ? "" : "none";
+    var labels = { usdb: "Current price of the pair (e.g. USDCAD)", usdjpy: "Current USDJPY price", jpyx: "Current USDJPY price (for conversion)" };
+    $("priceLabel").textContent = labels[t] || "Current price";
+    var notes = {
+      usdq: "Pip value is about $10 per 1.00 lot.",
+      usdb: "Pip value is about $10 divided by the pair price.",
+      usdjpy: "Pip value is about 1000 yen per 1.00 lot, converted to USD using the price.",
+      jpyx: "Pip value is 1000 yen per 1.00 lot, converted to USD using the USDJPY price.",
+      gold: "Assumes 1 pip = $0.10 move and 100 oz per lot ($10 per pip per lot). Some brokers count pips differently, so please check yours.",
+      custom: "For pairs like EURGBP or EURCHF, check the pip value in your broker's platform and type it here."
+    };
+    $("pipNote").textContent = notes[t];
+    render();
+  }
+
+  function renderLot(risk, rate, sl) {
+    var pv = pipValuePerLot();
+    var out = $("lotOut"), note = $("lotNote");
+    if (!sl || !risk) { out.textContent = "0.00"; note.textContent = "Enter your stop loss in pips"; return; }
+    if (!pv) { out.textContent = "0.00"; note.textContent = "Enter the current price above"; return; }
+    var exact = risk / (sl * pv);
+    var lots = Math.floor(exact * 100) / 100;
+    out.textContent = lots.toFixed(2);
+    if (lots === 0) {
+      note.textContent = "Below the 0.01 minimum lot. Tighten your SL or raise your risk.";
+      return;
+    }
+    var actual = lots * sl * pv;
+    note.textContent = "Exact: " + exact.toFixed(3) + " lots. Actual risk at " + lots.toFixed(2) + " lot: " +
+      usd(actual) + (rate ? " (" + php(actual * rate) + ")" : "");
+  }
+
+  function render() {
+    var bal = num($("balance").value);
+    var risk = mode === "pct" ? bal * num($("riskPct").value) / 100 : num($("riskFix").value);
+    var rate = num($("rate").value);
+
+    var sl = num($("sl").value);
+    $("riskUsd").textContent = usd(risk);
+    renderLot(risk, rate, sl);
+    $("riskPhp").textContent = rate ? php(risk * rate) : "Enter PHP rate to see pesos";
+
+    var list = ratios.slice();
+    var c = num($("custom").value);
+    if (c && list.indexOf(c) === -1) list.push(c);
+
+    var html = "";
+    list.forEach(function (r) {
+      var profit = risk * r;
+      html += "<tr>" +
+        "<td>1 : " + r + "</td>" +
+        "<td>" + (sl ? +(sl * r).toFixed(1) : "-") + "</td>" +
+        "<td class='lose'>" + usd(risk) + "<span class='small'>" + (rate ? php(risk * rate) : "") + "</span></td>" +
+        "<td class='win'>" + usd(profit) + "<span class='small'>" + (rate ? php(profit * rate) : "") + "</span></td>" +
+        "<td class='win'>" + usd(profit) + "<span class='small'>" + (bal ? "+" + (profit / bal * 100).toFixed(2) + "% of balance" : "") + "</span></td>" +
+        "</tr>";
+    });
+    $("rows").innerHTML = html;
+    save();
+  }
+
+  function fetchRate() {
+    $("status").textContent = "Fetching live rate...";
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.rates && d.rates.PHP) {
+          $("rate").value = d.rates.PHP.toFixed(4);
+          var when = d.time_last_update_utc ? new Date(d.time_last_update_utc).toLocaleString() : "just now";
+          $("status").textContent = "Rate loaded (updates once a day). Last updated: " + when + ". You can still edit it.";
+          render();
+        } else { throw new Error("no rate"); }
+      })
+      .catch(function () {
+        $("status").textContent = "Could not fetch the live rate. Please type the rate manually.";
+      });
+  }
+
+  ["balance", "riskPct", "riskFix", "rate", "custom", "sl", "price", "customPip"].forEach(function (id) {
+    $(id).addEventListener("input", render);
+  });
+  $("inst").addEventListener("change", updateInst);
+  $("modePct").addEventListener("click", function () { setMode("pct"); });
+  $("modeFix").addEventListener("click", function () { setMode("fix"); });
+  $("refresh").addEventListener("click", fetchRate);
+
+  load();
+  updateInst();
+  setMode(mode);
+  fetchRate();
+})();
+</script>
+</body>
+</html>
