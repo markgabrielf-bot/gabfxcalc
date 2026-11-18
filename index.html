@@ -3,140 +3,306 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Forex Risk Calculator</title>
+<title>Forex Risk Calculator and Journal</title>
 <style>
   :root {
     --bg: #0f1419; --card: #182028; --line: #2a3541; --text: #e8edf2; --muted: #8b99a8;
-    --accent: #3ddc97; --loss: #ff6b6b; --input: #0f1419;
+    --accent: #3ddc97; --loss: #ff6b6b; --warn: #ffb84d; --input: #0f1419;
   }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 760px; margin: 0 auto; }
+  .wrap { max-width: 820px; margin: 0 auto; }
   h1 { font-size: 1.4rem; margin: 8px 0 2px; }
+  h2 { font-size: 1rem; margin: 0 0 12px; }
   .sub { color: var(--muted); font-size: .9rem; margin-bottom: 16px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .full { grid-column: 1 / -1; }
+  @media (max-width: 560px) { .grid, .grid3 { grid-template-columns: 1fr; } }
   label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 4px; }
-  input, select { width: 100%; padding: 10px 12px; font-size: 1rem; color: var(--text);
-    background: var(--input); border: 1px solid var(--line); border-radius: 8px; }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+  input, select, textarea { width: 100%; padding: 10px 12px; font-size: 1rem; color: var(--text);
+    background: var(--input); border: 1px solid var(--line); border-radius: 8px; font-family: inherit; }
+  textarea { min-height: 64px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; }
   .toggle { display: flex; gap: 8px; margin-bottom: 12px; }
-  .toggle button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line);
+  .toggle button, .tabs button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--line);
     background: var(--input); color: var(--muted); font-size: .95rem; cursor: pointer; }
-  .toggle button.active { background: var(--accent); color: #0b1a12; border-color: var(--accent); font-weight: 600; }
+  .toggle button.active, .tabs button.active { background: var(--accent); color: #0b1a12; border-color: var(--accent); font-weight: 600; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
   .rate-row { display: flex; gap: 8px; align-items: flex-end; }
   .rate-row > div { flex: 1; }
   .btn { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--accent); background: transparent;
     color: var(--accent); font-size: .9rem; cursor: pointer; white-space: nowrap; }
   .btn:hover { background: rgba(61,220,151,.1); }
+  .btn.solid { background: var(--accent); color: #0b1a12; font-weight: 600; }
+  .btn.danger { border-color: var(--loss); color: var(--loss); }
+  .btn.danger:hover { background: rgba(255,107,107,.1); }
+  .btn.tiny { padding: 4px 8px; font-size: .75rem; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .status { font-size: .78rem; color: var(--muted); margin-top: 6px; min-height: 1em; }
   .hero { text-align: center; }
   .hero .label { color: var(--muted); font-size: .85rem; }
   .hero .big { font-size: 2rem; font-weight: 700; color: var(--loss); margin: 2px 0; }
   .hero .php { font-size: 1.1rem; color: var(--muted); }
-  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-  th, td { padding: 9px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { padding: 9px 6px; text-align: right; border-bottom: 1px solid var(--line); vertical-align: top; }
   th:first-child, td:first-child { text-align: left; }
-  th { color: var(--muted); font-weight: 500; font-size: .78rem; }
-  .win { color: var(--accent); } .lose { color: var(--loss); }
-  .small { font-size: .75rem; color: var(--muted); display: block; }
+  th { color: var(--muted); font-weight: 500; font-size: .75rem; white-space: nowrap; }
+  td.left, th.left { text-align: left; }
+  .win { color: var(--accent); } .lose { color: var(--loss); } .be { color: var(--muted); } .warn { color: var(--warn); }
+  .small { font-size: .72rem; color: var(--muted); display: block; }
   .scroll { overflow-x: auto; }
+  .note { max-width: 180px; white-space: normal; word-break: break-word; color: var(--muted); font-size: .78rem; text-align: left; }
   .foot { color: var(--muted); font-size: .75rem; text-align: center; margin-top: 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .tile { background: var(--input); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .tile .k { font-size: .72rem; color: var(--muted); }
+  .tile .v { font-size: 1.1rem; font-weight: 600; margin-top: 2px; }
+  .bar { height: 10px; background: var(--input); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-top: 6px; }
+  .bar > div { height: 100%; background: var(--accent); }
+  .empty { color: var(--muted); font-size: .9rem; padding: 8px 0; }
+  .msg { font-size: .85rem; margin-top: 10px; min-height: 1em; color: var(--warn); }
+  .section { display: none; }
+  .section.show { display: block; }
+  svg text { fill: var(--muted); font-size: 10px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Forex Risk Calculator</h1>
-  <div class="sub">Know exactly how much you risk and how much you can make, in USD and PHP.</div>
+  <h1>Forex Risk Calculator and Journal</h1>
+  <div class="sub">Size your trade, log it, and track your results in USD and PHP.</div>
 
-  <div class="card">
-    <div class="toggle">
-      <button id="modePct" class="active" type="button">Risk by % of balance</button>
-      <button id="modeFix" type="button">Risk by fixed amount</button>
+  <div class="tabs">
+    <button type="button" class="active" data-tab="calc">Calculator</button>
+    <button type="button" data-tab="journal">Journal</button>
+    <button type="button" data-tab="stats">Stats</button>
+  </div>
+
+  <!-- ================= CALCULATOR ================= -->
+  <div id="tab-calc" class="section show">
+    <div class="card">
+      <div class="toggle">
+        <button id="modePct" class="active" type="button">Risk by % of balance</button>
+        <button id="modeFix" type="button">Risk by fixed amount</button>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="balance">Account balance (USD)</label>
+          <input id="balance" type="number" inputmode="decimal" min="0" step="any" value="1000">
+        </div>
+        <div id="pctWrap">
+          <label for="riskPct">Risk per trade (%)</label>
+          <input id="riskPct" type="number" inputmode="decimal" min="0" step="any" value="1">
+        </div>
+        <div id="fixWrap" style="display:none">
+          <label for="riskFix">Risk per trade (USD)</label>
+          <input id="riskFix" type="number" inputmode="decimal" min="0" step="any" value="10">
+        </div>
+      </div>
     </div>
-    <div class="grid">
-      <div>
-        <label for="balance">Account balance (USD)</label>
-        <input id="balance" type="number" inputmode="decimal" min="0" step="any" value="1000">
+
+    <div class="card">
+      <div class="rate-row">
+        <div>
+          <label for="rate">USD to PHP rate (₱ per $1)</label>
+          <input id="rate" type="number" inputmode="decimal" min="0" step="any" placeholder="Loading rate...">
+        </div>
+        <button class="btn" id="refresh" type="button">Get latest rate</button>
       </div>
-      <div id="pctWrap">
-        <label for="riskPct">Risk per trade (%)</label>
-        <input id="riskPct" type="number" inputmode="decimal" min="0" step="any" value="1">
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="card hero">
+      <div class="label">You are risking per trade</div>
+      <div class="big" id="riskUsd">$0.00</div>
+      <div class="php" id="riskPhp">₱0.00</div>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label for="inst">Pair type</label>
+          <select id="inst">
+            <option value="usdq">USD is quote (EURUSD, GBPUSD, AUDUSD, NZDUSD)</option>
+            <option value="usdb">USD is base (USDCAD, USDCHF)</option>
+            <option value="usdjpy">USDJPY</option>
+            <option value="jpyx">JPY crosses (EURJPY, GBPJPY, AUDJPY...)</option>
+            <option value="gold">Gold (XAUUSD)</option>
+            <option value="custom">Other (enter pip value)</option>
+          </select>
+        </div>
+        <div>
+          <label for="sl">Stop loss (pips)</label>
+          <input id="sl" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 20">
+        </div>
+        <div id="priceWrap" style="display:none">
+          <label for="price" id="priceLabel">Current price</label>
+          <input id="price" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1.3650">
+        </div>
+        <div id="customPipWrap" style="display:none">
+          <label for="customPip">Pip value per 1.00 lot (USD)</label>
+          <input id="customPip" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10">
+        </div>
       </div>
-      <div id="fixWrap" style="display:none">
-        <label for="riskFix">Risk per trade (USD)</label>
-        <input id="riskFix" type="number" inputmode="decimal" min="0" step="any" value="10">
+      <div class="hero" style="margin-top:16px">
+        <div class="label">Lot size to use</div>
+        <div class="big" id="lotOut" style="color:var(--accent)">0.00</div>
+        <div class="php" id="lotNote">Enter your stop loss in pips</div>
+      </div>
+      <div class="status" id="pipNote"></div>
+      <div class="btnrow" style="justify-content:center">
+        <button class="btn solid" id="logThis" type="button">Log this trade in journal</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Ratio</th><th>TP pips</th><th>Risk</th><th>Profit if win</th><th>Net if win</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px; max-width: 220px;">
+        <label for="custom">Add custom ratio (1 : ?)</label>
+        <input id="custom" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 2.5">
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="rate-row">
-      <div>
-        <label for="rate">USD to PHP rate (₱ per $1)</label>
-        <input id="rate" type="number" inputmode="decimal" min="0" step="any" placeholder="Loading live rate...">
+  <!-- ================= JOURNAL ================= -->
+  <div id="tab-journal" class="section">
+    <div class="card">
+      <h2 id="formTitle">Add a trade</h2>
+      <div class="grid3">
+        <div>
+          <label for="jDate">Date</label>
+          <input id="jDate" type="date">
+        </div>
+        <div>
+          <label for="jPair">Pair</label>
+          <input id="jPair" type="text" placeholder="e.g. XAUUSD">
+        </div>
+        <div>
+          <label for="jDir">Direction</label>
+          <select id="jDir"><option value="Buy">Buy</option><option value="Sell">Sell</option></select>
+        </div>
+        <div>
+          <label for="jSL">Stop loss (pips)</label>
+          <input id="jSL" type="number" inputmode="decimal" min="0" step="any">
+        </div>
+        <div>
+          <label for="jLot">Lot size</label>
+          <input id="jLot" type="number" inputmode="decimal" min="0" step="any">
+        </div>
+        <div>
+          <label for="jRisk">Risk (USD)</label>
+          <input id="jRisk" type="number" inputmode="decimal" min="0" step="any">
+        </div>
+        <div>
+          <label for="jResult">Result</label>
+          <select id="jResult">
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="be">Break-even</option>
+          </select>
+        </div>
+        <div>
+          <label for="jAmt">Profit or loss amount (USD)</label>
+          <input id="jAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="Type it without a minus sign">
+        </div>
+        <div class="full">
+          <label for="jNotes">Notes (why you took it, mistakes, how you felt)</label>
+          <textarea id="jNotes"></textarea>
+        </div>
       </div>
-      <button class="btn" id="refresh" type="button">Get latest rate</button>
+      <div class="btnrow">
+        <button class="btn solid" id="saveTrade" type="button">Save trade</button>
+        <button class="btn" id="clearForm" type="button">Clear form</button>
+      </div>
+      <div class="msg" id="jMsg"></div>
     </div>
-    <div class="status" id="status"></div>
+
+    <div class="card">
+      <h2>Your trades</h2>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th class="left">Pair</th><th>Lot</th><th>Risk</th><th>Result</th><th>P/L</th><th>R</th><th class="left">Notes</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tradeRows"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="noTrades">No trades yet. Add your first trade above.</div>
+      <div class="btnrow">
+        <button class="btn" id="exportCsv" type="button">Export CSV</button>
+        <button class="btn" id="backup" type="button">Download backup</button>
+        <button class="btn" id="restoreBtn" type="button">Restore backup</button>
+        <button class="btn danger" id="clearAll" type="button">Delete all</button>
+        <input id="restoreFile" type="file" accept=".json,application/json" style="display:none">
+      </div>
+      <div class="status">Your journal is saved only in this browser. Download a backup now and then, because clearing your browser data will erase it.</div>
+    </div>
   </div>
 
-  <div class="card hero">
-    <div class="label">You are risking per trade</div>
-    <div class="big" id="riskUsd">$0.00</div>
-    <div class="php" id="riskPhp">₱0.00</div>
-  </div>
+  <!-- ================= STATS ================= -->
+  <div id="tab-stats" class="section">
+    <div class="card">
+      <h2>Challenge tracker</h2>
+      <div class="grid3">
+        <div>
+          <label for="cAcct">Account size (USD)</label>
+          <input id="cAcct" type="number" inputmode="decimal" min="0" step="any" value="10000">
+        </div>
+        <div>
+          <label for="cDaily">Max daily loss (%)</label>
+          <input id="cDaily" type="number" inputmode="decimal" min="0" step="any" value="3">
+        </div>
+        <div>
+          <label for="cMax">Max loss (%)</label>
+          <input id="cMax" type="number" inputmode="decimal" min="0" step="any" value="5">
+        </div>
+        <div>
+          <label for="cTarget">Profit target (%)</label>
+          <input id="cTarget" type="number" inputmode="decimal" min="0" step="any" value="8">
+        </div>
+        <div>
+          <label for="cMode">Max loss type</label>
+          <select id="cMode">
+            <option value="trail">Trailing (follows your highest balance)</option>
+            <option value="fixed">Fixed (from starting balance)</option>
+          </select>
+        </div>
+      </div>
+      <div id="cOut" style="margin-top:14px"></div>
+      <div class="status">Uses your closed trades from the journal only. Open trades, fees and swaps are not counted. Always check your firm's rules, because each firm calculates these limits differently.</div>
+    </div>
 
-  <div class="card">
-    <div class="grid">
-      <div>
-        <label for="inst">Pair type</label>
-        <select id="inst">
-          <option value="usdq">USD is quote (EURUSD, GBPUSD, AUDUSD, NZDUSD)</option>
-          <option value="usdb">USD is base (USDCAD, USDCHF)</option>
-          <option value="usdjpy">USDJPY</option>
-          <option value="jpyx">JPY crosses (EURJPY, GBPJPY, AUDJPY...)</option>
-          <option value="gold">Gold (XAUUSD)</option>
-          <option value="custom">Other (enter pip value)</option>
-        </select>
-      </div>
-      <div>
-        <label for="sl">Stop loss (pips)</label>
-        <input id="sl" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 20">
-      </div>
-      <div id="priceWrap" style="display:none">
-        <label for="price" id="priceLabel">Current price</label>
-        <input id="price" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 1.3650">
-      </div>
-      <div id="customPipWrap" style="display:none">
-        <label for="customPip">Pip value per 1.00 lot (USD)</label>
-        <input id="customPip" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 10">
-      </div>
+    <div class="card">
+      <h2>Overall stats</h2>
+      <div class="tiles" id="tiles"></div>
     </div>
-    <div class="hero" style="margin-top:16px">
-      <div class="label">Lot size to use</div>
-      <div class="big" id="lotOut" style="color:var(--accent)">0.00</div>
-      <div class="php" id="lotNote">Enter your stop loss in pips</div>
-    </div>
-    <div class="status" id="pipNote"></div>
-  </div>
 
-  <div class="card">
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Ratio</th><th>TP pips</th><th>Risk</th><th>Profit if win</th><th>Net if win</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
+    <div class="card">
+      <h2>Equity curve</h2>
+      <div id="curve"></div>
     </div>
-    <div style="margin-top:12px; max-width: 220px;">
-      <label for="custom">Add custom ratio (1 : ?)</label>
-      <input id="custom" type="number" inputmode="decimal" min="0" step="any" placeholder="e.g. 2.5">
+
+    <div class="card">
+      <h2>By pair</h2>
+      <div class="scroll" id="byPair"></div>
+    </div>
+
+    <div class="card">
+      <h2>By day of the week</h2>
+      <div class="scroll" id="byDay"></div>
     </div>
   </div>
 
@@ -149,12 +315,46 @@
   var $ = function (id) { return document.getElementById(id); };
   var mode = "pct";
   var ratios = [1, 2, 3, 4, 5];
-  var KEY = "fxrisk_v1";
+  var KEY = "fxrisk_v1", TKEY = "fxjournal_v1", CKEY = "fxchal_v1";
+  var trades = [];
+  var editingId = null;
+  var lastCalc = { lots: 0, sl: 0, risk: 0 };
+  var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+  /* ---------- helpers ---------- */
   function num(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; }
   function usd(n) { return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function php(n) { return "₱" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function sUsd(n, plus) { return (n < 0 ? "-" : (plus && n > 0 ? "+" : "")) + usd(Math.abs(n)); }
+  function sPhp(n, plus) { return (n < 0 ? "-" : (plus && n > 0 ? "+" : "")) + php(Math.abs(n)); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function todayStr() {
+    var d = new Date();
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
+  }
+  function rate() { return num($("rate").value); }
+  function cls(n) { return n > 0 ? "win" : (n < 0 ? "lose" : "be"); }
+  function fmtR(n) { return (n > 0 ? "+" : "") + n.toFixed(2) + "R"; }
 
+  /* ---------- tabs ---------- */
+  function showTab(name) {
+    ["calc", "journal", "stats"].forEach(function (t) {
+      $("tab-" + t).classList.toggle("show", t === name);
+    });
+    var btns = document.querySelectorAll(".tabs button");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle("active", btns[i].getAttribute("data-tab") === name);
+    }
+    if (name === "stats") renderStats();
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- calculator storage ---------- */
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify({
@@ -180,7 +380,27 @@
       if (s.customPip) $("customPip").value = s.customPip;
     } catch (e) {}
   }
+  function saveChal() {
+    try {
+      localStorage.setItem(CKEY, JSON.stringify({
+        acct: $("cAcct").value, daily: $("cDaily").value, max: $("cMax").value,
+        target: $("cTarget").value, mode: $("cMode").value
+      }));
+    } catch (e) {}
+  }
+  function loadChal() {
+    try {
+      var s = JSON.parse(localStorage.getItem(CKEY) || "null");
+      if (!s) return;
+      if (s.acct) $("cAcct").value = s.acct;
+      if (s.daily) $("cDaily").value = s.daily;
+      if (s.max) $("cMax").value = s.max;
+      if (s.target) $("cTarget").value = s.target;
+      if (s.mode) $("cMode").value = s.mode;
+    } catch (e) {}
+  }
 
+  /* ---------- calculator ---------- */
   function setMode(m) {
     mode = m;
     $("modePct").classList.toggle("active", m === "pct");
@@ -217,9 +437,10 @@
     render();
   }
 
-  function renderLot(risk, rate, sl) {
+  function renderLot(risk, r, sl) {
     var pv = pipValuePerLot();
     var out = $("lotOut"), note = $("lotNote");
+    lastCalc = { lots: 0, sl: sl, risk: risk };
     if (!sl || !risk) { out.textContent = "0.00"; note.textContent = "Enter your stop loss in pips"; return; }
     if (!pv) { out.textContent = "0.00"; note.textContent = "Enter the current price above"; return; }
     var exact = risk / (sl * pv);
@@ -230,43 +451,46 @@
       return;
     }
     var actual = lots * sl * pv;
+    lastCalc = { lots: lots, sl: sl, risk: actual };
     note.textContent = "Exact: " + exact.toFixed(3) + " lots. Actual risk at " + lots.toFixed(2) + " lot: " +
-      usd(actual) + (rate ? " (" + php(actual * rate) + ")" : "");
+      usd(actual) + (r ? " (" + php(actual * r) + ")" : "");
   }
 
   function render() {
     var bal = num($("balance").value);
     var risk = mode === "pct" ? bal * num($("riskPct").value) / 100 : num($("riskFix").value);
-    var rate = num($("rate").value);
-
+    var r = rate();
     var sl = num($("sl").value);
+
     $("riskUsd").textContent = usd(risk);
-    renderLot(risk, rate, sl);
-    $("riskPhp").textContent = rate ? php(risk * rate) : "Enter PHP rate to see pesos";
+    $("riskPhp").textContent = r ? php(risk * r) : "Enter PHP rate to see pesos";
+    renderLot(risk, r, sl);
 
     var list = ratios.slice();
     var c = num($("custom").value);
     if (c && list.indexOf(c) === -1) list.push(c);
 
     var html = "";
-    list.forEach(function (r) {
-      var profit = risk * r;
+    list.forEach(function (ratio) {
+      var profit = risk * ratio;
       html += "<tr>" +
-        "<td>1 : " + r + "</td>" +
-        "<td>" + (sl ? +(sl * r).toFixed(1) : "-") + "</td>" +
-        "<td class='lose'>" + usd(risk) + "<span class='small'>" + (rate ? php(risk * rate) : "") + "</span></td>" +
-        "<td class='win'>" + usd(profit) + "<span class='small'>" + (rate ? php(profit * rate) : "") + "</span></td>" +
+        "<td>1 : " + ratio + "</td>" +
+        "<td>" + (sl ? +(sl * ratio).toFixed(1) : "-") + "</td>" +
+        "<td class='lose'>" + usd(risk) + "<span class='small'>" + (r ? php(risk * r) : "") + "</span></td>" +
+        "<td class='win'>" + usd(profit) + "<span class='small'>" + (r ? php(profit * r) : "") + "</span></td>" +
         "<td class='win'>" + usd(profit) + "<span class='small'>" + (bal ? "+" + (profit / bal * 100).toFixed(2) + "% of balance" : "") + "</span></td>" +
         "</tr>";
     });
     $("rows").innerHTML = html;
     save();
+    renderLog();
+    if ($("tab-stats").classList.contains("show")) renderStats();
   }
 
   function fetchRate() {
-    $("status").textContent = "Fetching live rate...";
+    $("status").textContent = "Fetching latest rate...";
     fetch("https://open.er-api.com/v6/latest/USD")
-      .then(function (r) { return r.json(); })
+      .then(function (res) { return res.json(); })
       .then(function (d) {
         if (d && d.rates && d.rates.PHP) {
           $("rate").value = d.rates.PHP.toFixed(4);
@@ -276,10 +500,347 @@
         } else { throw new Error("no rate"); }
       })
       .catch(function () {
-        $("status").textContent = "Could not fetch the live rate. Please type the rate manually.";
+        $("status").textContent = "Could not fetch the rate. Please type the rate manually.";
       });
   }
 
+  /* ---------- journal data ---------- */
+  function loadTrades() {
+    try {
+      var t = JSON.parse(localStorage.getItem(TKEY) || "[]");
+      trades = normalizeAll(t);
+    } catch (e) { trades = []; }
+  }
+  function saveTrades() {
+    try { localStorage.setItem(TKEY, JSON.stringify(trades)); } catch (e) {
+      $("jMsg").textContent = "Could not save to this browser. Please download a backup.";
+    }
+  }
+  function normalizeTrade(t) {
+    if (!t || typeof t !== "object") return null;
+    var res = t.result === "win" || t.result === "loss" || t.result === "be" ? t.result : null;
+    var date = typeof t.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t.date) ? t.date : null;
+    var risk = parseFloat(t.risk), pnl = parseFloat(t.pnl);
+    if (!res || !date || !isFinite(risk) || risk <= 0 || !isFinite(pnl)) return null;
+    if (res === "win") pnl = Math.abs(pnl);
+    if (res === "loss") pnl = -Math.abs(pnl);
+    if (res === "be") pnl = 0;
+    return {
+      id: parseFloat(t.id) || Date.now() + Math.random(),
+      date: date,
+      pair: String(t.pair || "").slice(0, 20),
+      dir: t.dir === "Sell" ? "Sell" : "Buy",
+      sl: isFinite(parseFloat(t.sl)) ? parseFloat(t.sl) : 0,
+      lot: isFinite(parseFloat(t.lot)) ? parseFloat(t.lot) : 0,
+      risk: risk, result: res, pnl: pnl,
+      notes: String(t.notes || "").slice(0, 1000)
+    };
+  }
+  function normalizeAll(arr) {
+    var out = [];
+    if (!Array.isArray(arr)) return out;
+    arr.forEach(function (t) { var n = normalizeTrade(t); if (n) out.push(n); });
+    return out;
+  }
+  function sortedAsc() {
+    return trades.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : (a.date > b.date ? 1 : a.id - b.id);
+    });
+  }
+
+  /* ---------- journal form ---------- */
+  function clearForm() {
+    editingId = null;
+    $("formTitle").textContent = "Add a trade";
+    $("saveTrade").textContent = "Save trade";
+    $("jDate").value = todayStr();
+    ["jPair", "jSL", "jLot", "jRisk", "jAmt", "jNotes"].forEach(function (id) { $(id).value = ""; });
+    $("jDir").value = "Buy";
+    $("jResult").value = "win";
+    $("jMsg").textContent = "";
+  }
+
+  function saveTrade() {
+    var date = $("jDate").value;
+    var pair = $("jPair").value.trim().toUpperCase();
+    var risk = num($("jRisk").value);
+    var res = $("jResult").value;
+    var amt = num($("jAmt").value);
+    if (!date || !pair || !risk) { $("jMsg").textContent = "Please fill in the date, pair and risk."; return; }
+    if (res !== "be" && !amt) { $("jMsg").textContent = "Please enter the profit or loss amount."; return; }
+    var pnl = res === "win" ? amt : (res === "loss" ? -amt : 0);
+    var t = {
+      id: editingId || Date.now(),
+      date: date, pair: pair, dir: $("jDir").value,
+      sl: num($("jSL").value), lot: num($("jLot").value),
+      risk: risk, result: res, pnl: pnl,
+      notes: $("jNotes").value.trim()
+    };
+    if (editingId) {
+      for (var i = 0; i < trades.length; i++) { if (trades[i].id === editingId) { trades[i] = t; break; } }
+    } else {
+      trades.push(t);
+    }
+    saveTrades();
+    clearForm();
+    $("jMsg").textContent = "Trade saved.";
+    renderLog();
+    renderStats();
+  }
+
+  function editTrade(id) {
+    var t = null;
+    trades.forEach(function (x) { if (x.id === id) t = x; });
+    if (!t) return;
+    editingId = id;
+    $("formTitle").textContent = "Edit trade";
+    $("saveTrade").textContent = "Update trade";
+    $("jDate").value = t.date;
+    $("jPair").value = t.pair;
+    $("jDir").value = t.dir;
+    $("jSL").value = t.sl || "";
+    $("jLot").value = t.lot || "";
+    $("jRisk").value = t.risk;
+    $("jResult").value = t.result;
+    $("jAmt").value = t.pnl ? Math.abs(t.pnl) : "";
+    $("jNotes").value = t.notes;
+    $("jMsg").textContent = "";
+    window.scrollTo(0, 0);
+  }
+
+  function deleteTrade(id) {
+    if (!confirm("Delete this trade?")) return;
+    trades = trades.filter(function (x) { return x.id !== id; });
+    if (editingId === id) clearForm();
+    saveTrades();
+    renderLog();
+    renderStats();
+  }
+
+  function renderLog() {
+    var r = rate();
+    var list = sortedAsc().reverse();
+    $("noTrades").style.display = list.length ? "none" : "";
+    var html = "";
+    list.forEach(function (t) {
+      var rr = t.risk ? t.pnl / t.risk : 0;
+      var label = t.result === "win" ? "Win" : (t.result === "loss" ? "Loss" : "BE");
+      html += "<tr>" +
+        "<td>" + esc(t.date) + "</td>" +
+        "<td class='left'>" + esc(t.pair) + "<span class='small'>" + esc(t.dir) + (t.sl ? ", " + t.sl + " pips" : "") + "</span></td>" +
+        "<td>" + (t.lot ? t.lot.toFixed(2) : "-") + "</td>" +
+        "<td>" + usd(t.risk) + "</td>" +
+        "<td class='" + cls(t.pnl) + "'>" + label + "</td>" +
+        "<td class='" + cls(t.pnl) + "'>" + sUsd(t.pnl, true) + "<span class='small'>" + (r ? sPhp(t.pnl * r, true) : "") + "</span></td>" +
+        "<td class='" + cls(t.pnl) + "'>" + fmtR(rr) + "</td>" +
+        "<td class='note'>" + esc(t.notes) + "</td>" +
+        "<td><button class='btn tiny' data-act='edit' data-id='" + t.id + "' type='button'>Edit</button> " +
+        "<button class='btn tiny danger' data-act='del' data-id='" + t.id + "' type='button'>Delete</button></td>" +
+        "</tr>";
+    });
+    $("tradeRows").innerHTML = html;
+  }
+
+  /* ---------- export / import ---------- */
+  function download(name, text, type) {
+    var b = new Blob([text], { type: type });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function csvCell(v) {
+    var s = String(v == null ? "" : v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  function exportCsv() {
+    if (!trades.length) { $("jMsg").textContent = "No trades to export yet."; return; }
+    var rows = [["Date", "Pair", "Direction", "SL pips", "Lot", "Risk USD", "Result", "P/L USD", "R", "Notes"]];
+    sortedAsc().forEach(function (t) {
+      rows.push([t.date, t.pair, t.dir, t.sl, t.lot, t.risk, t.result, t.pnl, (t.pnl / t.risk).toFixed(2), t.notes]);
+    });
+    download("trading-journal.csv", rows.map(function (r) { return r.map(csvCell).join(","); }).join("\n"), "text/csv");
+  }
+  function backup() {
+    download("trading-journal-backup.json", JSON.stringify({ app: "fx-journal", trades: trades }, null, 2), "application/json");
+  }
+  function restore(file) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var d = JSON.parse(fr.result);
+        var list = normalizeAll(Array.isArray(d) ? d : d.trades);
+        if (!list.length) { $("jMsg").textContent = "That file has no valid trades."; return; }
+        if (!confirm("Replace your current journal with " + list.length + " trades from this backup?")) return;
+        trades = list;
+        saveTrades();
+        renderLog();
+        renderStats();
+        $("jMsg").textContent = "Backup restored.";
+      } catch (e) { $("jMsg").textContent = "Could not read that file."; }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ---------- stats ---------- */
+  function computeStats(list, acct) {
+    var s = { n: list.length, wins: 0, losses: 0, bes: 0, total: 0, totalR: 0, gw: 0, gl: 0,
+      best: 0, worst: 0, maxLossStreak: 0, maxDD: 0, maxDDpct: 0, peak: acct, equity: [acct] };
+    var streak = 0, eq = acct, peak = acct;
+    list.forEach(function (t) {
+      s.total += t.pnl;
+      s.totalR += t.risk ? t.pnl / t.risk : 0;
+      if (t.result === "win") { s.wins++; s.gw += t.pnl; streak = 0; }
+      else if (t.result === "loss") { s.losses++; s.gl += -t.pnl; streak++; if (streak > s.maxLossStreak) s.maxLossStreak = streak; }
+      else { s.bes++; }
+      if (t.pnl > s.best) s.best = t.pnl;
+      if (t.pnl < s.worst) s.worst = t.pnl;
+      eq += t.pnl;
+      s.equity.push(eq);
+      if (eq > peak) peak = eq;
+      var dd = peak - eq;
+      if (dd > s.maxDD) { s.maxDD = dd; s.maxDDpct = peak ? dd / peak * 100 : 0; }
+    });
+    s.peak = peak;
+    return s;
+  }
+
+  function tile(k, v, c) {
+    return "<div class='tile'><div class='k'>" + k + "</div><div class='v " + (c || "") + "'>" + v + "</div></div>";
+  }
+
+  function renderChallenge(list) {
+    var acct = num($("cAcct").value);
+    var dailyPct = num($("cDaily").value), maxPct = num($("cMax").value), tgtPct = num($("cTarget").value);
+    var out = $("cOut");
+    if (!acct) { out.innerHTML = "<div class='empty'>Enter your account size to see your limits.</div>"; return; }
+    var r = rate();
+    var dailyLimit = acct * dailyPct / 100, maxLoss = acct * maxPct / 100, target = acct * tgtPct / 100;
+    var s = computeStats(list, acct);
+    var balance = acct + s.total;
+    var today = todayStr(), todayPL = 0;
+    list.forEach(function (t) { if (t.date === today) todayPL += t.pnl; });
+
+    var dailyRoom = Math.max(0, dailyLimit + Math.min(todayPL, 0));
+    var floor = $("cMode").value === "trail" ? s.peak - maxLoss : acct - maxLoss;
+    var maxRoom = Math.max(0, balance - floor);
+    var progress = target ? Math.max(0, Math.min(100, s.total / target * 100)) : 0;
+
+    function roomClass(room, limit) { return room <= 0 ? "lose" : (room < limit * 0.25 ? "warn" : "win"); }
+    function money(n) { return usd(n) + (r ? " (" + php(n * r) + ")" : ""); }
+
+    var html = "<div class='tiles'>" +
+      tile("Balance (closed trades)", usd(balance), cls(s.total)) +
+      tile("Today's P/L", sUsd(todayPL, true), cls(todayPL)) +
+      tile("Daily loss room left", usd(dailyRoom), roomClass(dailyRoom, dailyLimit)) +
+      tile("Max loss room left", usd(maxRoom), roomClass(maxRoom, maxLoss)) +
+      tile("Lowest allowed balance", usd(floor)) +
+      tile("Profit target", usd(target)) +
+      "</div>";
+    html += "<div style='margin-top:12px;font-size:.85rem'>Progress to target: <strong>" + progress.toFixed(1) +
+      "%</strong> (" + sUsd(s.total, true) + " of " + usd(target) + ")</div>" +
+      "<div class='bar'><div style='width:" + progress + "%'></div></div>";
+    if (dailyRoom <= 0) html += "<div class='msg'>You have reached the daily loss limit. Stop trading for today.</div>";
+    else if (maxRoom <= 0) html += "<div class='msg'>You have reached the max loss limit.</div>";
+    else if (r) html += "<div class='status'>Daily room left in pesos: " + php(dailyRoom * r) + ". Max loss room left in pesos: " + php(maxRoom * r) + ".</div>";
+    out.innerHTML = html;
+  }
+
+  function groupTable(list, keyFn, order) {
+    var map = {};
+    list.forEach(function (t) {
+      var k = keyFn(t);
+      if (!map[k]) map[k] = { n: 0, w: 0, l: 0, pnl: 0, rr: 0 };
+      var g = map[k];
+      g.n++; g.pnl += t.pnl; g.rr += t.risk ? t.pnl / t.risk : 0;
+      if (t.result === "win") g.w++;
+      if (t.result === "loss") g.l++;
+    });
+    var keys = order ? order.filter(function (k) { return map[k]; }) : Object.keys(map).sort();
+    if (!keys.length) return "<div class='empty'>No data yet.</div>";
+    var r = rate();
+    var html = "<table><thead><tr><th>Name</th><th>Trades</th><th>Win rate</th><th>P/L</th><th>Total R</th></tr></thead><tbody>";
+    keys.forEach(function (k) {
+      var g = map[k];
+      var wr = (g.w + g.l) ? (g.w / (g.w + g.l) * 100).toFixed(0) + "%" : "-";
+      html += "<tr><td>" + esc(k) + "</td><td>" + g.n + "</td><td>" + wr + "</td>" +
+        "<td class='" + cls(g.pnl) + "'>" + sUsd(g.pnl, true) + "<span class='small'>" + (r ? sPhp(g.pnl * r, true) : "") + "</span></td>" +
+        "<td class='" + cls(g.rr) + "'>" + fmtR(g.rr) + "</td></tr>";
+    });
+    return html + "</tbody></table>";
+  }
+
+  function curveSvg(points, base) {
+    if (points.length < 3) return "<div class='empty'>Log at least 2 trades to see your equity curve.</div>";
+    var W = 600, H = 200, padL = 52, padR = 10, padT = 12, padB = 12;
+    var min = Math.min.apply(null, points), max = Math.max.apply(null, points);
+    if (min === max) { min -= 1; max += 1; }
+    var span = max - min;
+    function x(i) { return padL + (W - padL - padR) * i / (points.length - 1); }
+    function y(v) { return padT + (H - padT - padB) * (1 - (v - min) / span); }
+    var pts = points.map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
+    var svg = "<svg viewBox='0 0 " + W + " " + H + "' width='100%' role='img' aria-label='Equity curve'>" +
+      "<line x1='" + padL + "' x2='" + (W - padR) + "' y1='" + y(base).toFixed(1) + "' y2='" + y(base).toFixed(1) +
+      "' stroke='#8b99a8' stroke-dasharray='4 4' stroke-width='1'/>" +
+      "<polyline fill='none' style='stroke:var(--accent)' stroke-width='2' points='" + pts + "'/>" +
+      "<text x='4' y='" + (padT + 8) + "'>" + Math.round(max).toLocaleString("en-US") + "</text>" +
+      "<text x='4' y='" + (H - padB) + "'>" + Math.round(min).toLocaleString("en-US") + "</text>" +
+      "</svg>" +
+      "<div class='status'>Dashed line is your starting balance. Each point is one closed trade.</div>";
+    return svg;
+  }
+
+  function renderStats() {
+    var list = sortedAsc();
+    renderChallenge(list);
+    var acct = num($("cAcct").value) || 10000;
+    var s = computeStats(list, acct);
+    var r = rate();
+
+    if (!s.n) {
+      $("tiles").innerHTML = "<div class='empty'>No trades yet. Your stats will show here after you log trades.</div>";
+    } else {
+      var decided = s.wins + s.losses;
+      var winRate = decided ? (s.wins / decided * 100).toFixed(1) + "%" : "-";
+      var avgWin = s.wins ? s.gw / s.wins : 0;
+      var avgLoss = s.losses ? s.gl / s.losses : 0;
+      var pf = s.gl ? (s.gw / s.gl).toFixed(2) : (s.gw ? "No losses" : "-");
+      $("tiles").innerHTML =
+        tile("Total trades", s.n + " (" + s.wins + "W / " + s.losses + "L / " + s.bes + "BE)") +
+        tile("Win rate", winRate) +
+        tile("Total P/L", sUsd(s.total, true) + (r ? "<span class='small'>" + sPhp(s.total * r, true) + "</span>" : ""), cls(s.total)) +
+        tile("Total R", fmtR(s.totalR), cls(s.totalR)) +
+        tile("Expectancy per trade", fmtR(s.totalR / s.n), cls(s.totalR)) +
+        tile("Average win", usd(avgWin), "win") +
+        tile("Average loss", usd(avgLoss), "lose") +
+        tile("Profit factor", pf) +
+        tile("Best trade", sUsd(s.best, true), "win") +
+        tile("Worst trade", sUsd(s.worst, true), "lose") +
+        tile("Longest losing streak", s.maxLossStreak) +
+        tile("Max drawdown", usd(s.maxDD) + "<span class='small'>" + s.maxDDpct.toFixed(1) + "% from peak</span>", s.maxDD ? "lose" : "");
+    }
+    $("curve").innerHTML = curveSvg(s.equity, acct);
+    $("byPair").innerHTML = groupTable(list, function (t) { return t.pair || "?"; });
+    $("byDay").innerHTML = groupTable(list, function (t) {
+      return DAYS[new Date(t.date + "T00:00:00").getDay()];
+    }, DAYS);
+  }
+
+  /* ---------- log from calculator ---------- */
+  function logThis() {
+    clearForm();
+    if ($("inst").value === "gold") $("jPair").value = "XAUUSD";
+    if (lastCalc.sl) $("jSL").value = +lastCalc.sl.toFixed(2);
+    if (lastCalc.lots) $("jLot").value = lastCalc.lots.toFixed(2);
+    if (lastCalc.risk) $("jRisk").value = +lastCalc.risk.toFixed(2);
+    showTab("journal");
+    $("jMsg").textContent = "Pair, direction and the result are still empty. Fill them in and save.";
+  }
+
+  /* ---------- events ---------- */
   ["balance", "riskPct", "riskFix", "rate", "custom", "sl", "price", "customPip"].forEach(function (id) {
     $(id).addEventListener("input", render);
   });
@@ -288,9 +849,48 @@
   $("modeFix").addEventListener("click", function () { setMode("fix"); });
   $("refresh").addEventListener("click", fetchRate);
 
+  var tabBtns = document.querySelectorAll(".tabs button");
+  for (var i = 0; i < tabBtns.length; i++) {
+    tabBtns[i].addEventListener("click", function () { showTab(this.getAttribute("data-tab")); });
+  }
+  $("logThis").addEventListener("click", logThis);
+  $("saveTrade").addEventListener("click", saveTrade);
+  $("clearForm").addEventListener("click", clearForm);
+  $("exportCsv").addEventListener("click", exportCsv);
+  $("backup").addEventListener("click", backup);
+  $("restoreBtn").addEventListener("click", function () { $("restoreFile").click(); });
+  $("restoreFile").addEventListener("change", function () {
+    if (this.files && this.files[0]) restore(this.files[0]);
+    this.value = "";
+  });
+  $("clearAll").addEventListener("click", function () {
+    if (!trades.length) return;
+    if (!confirm("Delete ALL trades? This cannot be undone. Tip: download a backup first.")) return;
+    trades = [];
+    saveTrades();
+    clearForm();
+    renderLog();
+    renderStats();
+  });
+  $("tradeRows").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]");
+    if (!b) return;
+    var id = parseFloat(b.getAttribute("data-id"));
+    if (b.getAttribute("data-act") === "edit") editTrade(id); else deleteTrade(id);
+  });
+  ["cAcct", "cDaily", "cMax", "cTarget"].forEach(function (id) {
+    $(id).addEventListener("input", function () { saveChal(); renderStats(); });
+  });
+  $("cMode").addEventListener("change", function () { saveChal(); renderStats(); });
+
+  /* ---------- start ---------- */
   load();
+  loadChal();
+  loadTrades();
+  clearForm();
   updateInst();
   setMode(mode);
+  renderStats();
   fetchRate();
 })();
 </script>
