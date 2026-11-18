@@ -186,7 +186,25 @@
         </div>
         <div>
           <label for="jPair">Pair</label>
-          <input id="jPair" type="text" placeholder="e.g. XAUUSD">
+          <select id="jPair">
+            <option value="">Select pair</option>
+            <optgroup label="Majors">
+              <option value="EURUSD">EURUSD</option>
+              <option value="GBPUSD">GBPUSD</option>
+              <option value="USDJPY">USDJPY</option>
+              <option value="USDCHF">USDCHF</option>
+              <option value="AUDUSD">AUDUSD</option>
+              <option value="USDCAD">USDCAD</option>
+              <option value="NZDUSD">NZDUSD</option>
+            </optgroup>
+            <optgroup label="Metals">
+              <option value="XAUUSD">XAUUSD (Gold)</option>
+            </optgroup>
+            <optgroup label="Others">
+              <option value="OTHER">Others (type your own)</option>
+            </optgroup>
+          </select>
+          <input id="jPairCustom" type="text" maxlength="20" placeholder="Type your pair, e.g. GBPJPY" style="display:none;margin-top:8px">
         </div>
         <div>
           <label for="jDir">Direction</label>
@@ -549,12 +567,27 @@
   }
 
   /* ---------- journal form ---------- */
+  var PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", "XAUUSD"];
+  function pairUI() {
+    $("jPairCustom").style.display = $("jPair").value === "OTHER" ? "" : "none";
+  }
+  function getPair() {
+    return $("jPair").value === "OTHER" ? $("jPairCustom").value.trim().toUpperCase() : $("jPair").value;
+  }
+  function setPair(p) {
+    if (PAIRS.indexOf(p) >= 0) { $("jPair").value = p; $("jPairCustom").value = ""; }
+    else if (p) { $("jPair").value = "OTHER"; $("jPairCustom").value = p; }
+    else { $("jPair").value = ""; $("jPairCustom").value = ""; }
+    pairUI();
+  }
+
   function clearForm() {
     editingId = null;
     $("formTitle").textContent = "Add a trade";
     $("saveTrade").textContent = "Save trade";
     $("jDate").value = todayStr();
-    ["jPair", "jSL", "jLot", "jRisk", "jAmt", "jNotes"].forEach(function (id) { $(id).value = ""; });
+    ["jSL", "jLot", "jRisk", "jAmt", "jNotes"].forEach(function (id) { $(id).value = ""; });
+    setPair("");
     $("jDir").value = "Buy";
     $("jResult").value = "win";
     $("jMsg").textContent = "";
@@ -562,7 +595,7 @@
 
   function saveTrade() {
     var date = $("jDate").value;
-    var pair = $("jPair").value.trim().toUpperCase();
+    var pair = getPair();
     var risk = num($("jRisk").value);
     var res = $("jResult").value;
     var amt = num($("jAmt").value);
@@ -596,7 +629,7 @@
     $("formTitle").textContent = "Edit trade";
     $("saveTrade").textContent = "Update trade";
     $("jDate").value = t.date;
-    $("jPair").value = t.pair;
+    setPair(t.pair);
     $("jDir").value = t.dir;
     $("jSL").value = t.sl || "";
     $("jLot").value = t.lot || "";
@@ -832,7 +865,7 @@
   /* ---------- log from calculator ---------- */
   function logThis() {
     clearForm();
-    if ($("inst").value === "gold") $("jPair").value = "XAUUSD";
+    if ($("inst").value === "gold") setPair("XAUUSD");
     if (lastCalc.sl) $("jSL").value = +lastCalc.sl.toFixed(2);
     if (lastCalc.lots) $("jLot").value = lastCalc.lots.toFixed(2);
     if (lastCalc.risk) $("jRisk").value = +lastCalc.risk.toFixed(2);
@@ -853,6 +886,10 @@
   for (var i = 0; i < tabBtns.length; i++) {
     tabBtns[i].addEventListener("click", function () { showTab(this.getAttribute("data-tab")); });
   }
+  $("jPair").addEventListener("change", function () {
+    pairUI();
+    if (this.value === "OTHER") $("jPairCustom").focus();
+  });
   $("logThis").addEventListener("click", logThis);
   $("saveTrade").addEventListener("click", saveTrade);
   $("clearForm").addEventListener("click", clearForm);
